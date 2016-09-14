@@ -1,0 +1,78 @@
+jest świat 2d, w którym są ameby
+każda ameba jest sterowana siecią neuronową i ma ciało z jakimiś fizycznymi aspektami
+
+zmienna genetyczna - wartość stała dla ameby podczas jej życia, zmienia się podczas rozmnażania
+input neuronowy - wartość wejściowa dla sieci sterującej amebą
+output neuronowy - wartość wyjściowa z sieci sterującej amebą
+życiowy atrybut - wartość zmienna w czasie życia ameby
+tick (t) - jednostka czasu
+kaloria (cal) - jednostka jedzenia
+
+każda ameba żeby przeżyć musi zużywać trochę jedzenia na tick - metabolizm
+im wyższy ameba ma jakiś fizyczny atrybut tym większy ma metabolizm (liniowo lub szybciej - zasada przeciwnych zwrotów)
+
+świat podzielony jest na biomy, każdy z nich może inaczej wpływać na ameby
+ameba może być tylko w jednym biomie naraz
+na świecie znajdują się również kamienie, które ograniczają amebom widok i są ciężkie
+fizyczne
+zmienne genetyczne:
+	max hp - z tego też wynika wielkość
+	atak
+	szybkość
+	wartości wag w sieci neuronowej
+	lifespan
+	kolor (nie kosztuje metabolizmu)
+	percepcja
+	max najedzenie
+	hp regen
+
+im szybciej ameba się porusza tym więcej zużywa cal/t, zasada pz
+
+inputy neuronowe:
+	n najbliższych ameb - ich hp, max hp, kolor, kolor komunikacyjny, kierunek do ameby, kierunek w którym skierowana jest ameba
+	m najbliższych jedzeń - kierunek do jedzenia, ilość cal w jedzeniu
+	jej własne hp
+	jej własne najedzenie
+	biom w jakim się znajduje
+	k najbliższych biomów - kierunek, kolor
+	l najbliższych kamieni - kierunek
+
+outputy neuronowe:
+	szybkość lewego koła
+	szybkość prawego koła
+	kolor komunikacyjny
+	agresywność
+	popęd
+
+utrzymywanie wysokich wartości outputów neuronowych kosztuje metabolizm - poza kolorem komunikacyjnym (nie da się zdefiniować "wysokiej wartości")
+
+życiowe atrybuty:
+	hp
+	kierunek
+	koordynaty
+	kolor komunikacyjny
+	agresywność
+	popęd
+	najedzenie
+
+wszystkie obiekty (oprócz biomów) mają kształt kół dla uproszczenia modelu kolizji
+kiedy ameba zderza się z jedzeniem, zjada jedzenie - cal jedzenia są dodane do jej najedzenia, overflow jest ignorowany
+kiedy ameba zderza się z kamieniem, nic się nie dzieje
+kiedy ameba zderza się z inną amebą, dzieją się dwie rzeczy (w dwie strony, raz jedna ameba to X, a druga Y, potem odwrotnie):
+	1. rozmnażanie:
+		porównaj genomy X i Y - jeśli ich odległość jest większa niż x, zaniechaj (specjacja)
+		losuj liczbę z zakresu outputu sieci neuronowej
+		jeśli liczba jest mniejsza niż popęd X:
+			stwórz nową amebę na podstawie genomu X i Y
+			zabierz X n kalorii z najedzenia
+	2. atak:
+		odejmij z hp Y (n + (agresywność X * atak X)) obrażeń
+
+metabolizm: w każdym ticku ameba zjada ileś kalorii ze swojego najedzenia - ilość kalorii jest liczona na podstawie zmiennych genetycznych i życiowych atrybutów
+jeśli najedzenie spadnie do 0, zamiast z najedzenia kalorie odejmowane są z hp
+jeśli hp ameby <= 0, zmienia się ona w ileś jedzeń po n kalorii (raczej dużo) - dokładna ilość kalorii jest liczona na podstawie zmiennych genetycznych i najedzenia ameby w chwili jej śmierci
+ameby regenerują hp w każdym ticku zgodnie ze swoją zmienną genetyczną hp regen
+percepcja to promień w jakim ameba ma szansę zauważać rzeczy
+jeśli jakiś obiekt wejdzie w promień percepcji ameby, w każdym ticku ona ma szansę na zauważenie go - i wtedy jest on jej podawany jako input neuronowy aż do momentu aż wyjdzie on z promienia percepcji
+szansa zauważenia przedmiotu zależy od odległości od przedmiotu wyrażonej jako procent promienia percepcji i od kąta - im bardziej coś jest z przodu ameby tym większą ona ma szansę na dostrzeżenie go
+kiedy amebie skończy się lifespan (wyrażony w tickach), jej hp spada do 0
