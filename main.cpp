@@ -1,15 +1,14 @@
-#include <SFML/Graphics.hpp>
-#include <Box2D/Box2D.h>
+#include "Amoeba.h"
+#include "AmoebaFood.h"
+#include "AmoebaWorld.h"
 
-const float32 TIME_STEP = 1.f / 60.f;
-const int POSITION_ITERATIONS = 3;
-const int VELOCITY_ITERATIONS = 8;
-const float32 LINEAR_DAMPING = 6;
-const float32 ANGULAR_DAMPING = 6;
+namespace global {
 
-class Amoeba {
-public:
-    static Amoeba *createAmoeba(b2World *boxWorld, b2Vec2 &position) {
+    float randFloat(float hi) {
+        return (float) rand() / (RAND_MAX / hi);
+    }
+
+    b2Body *createDynamicCircularBody(b2World *boxWorld, b2Vec2 &position, float radius, float density) {
         auto bodyDef = new b2BodyDef;
         bodyDef->type = b2BodyType::b2_dynamicBody;
         bodyDef->active = true;
@@ -17,9 +16,9 @@ public:
         b2Body *body = boxWorld->CreateBody(bodyDef);
         b2Shape *shape;
         shape = new b2CircleShape;
-        shape->m_radius = 1.f;
+        shape->m_radius = radius;
         b2FixtureDef *fixtureDef = new b2FixtureDef;
-        fixtureDef->density = .1;
+        fixtureDef->density = density;
         fixtureDef->friction = 1;
         fixtureDef->restitution = 1;
         fixtureDef->shape = shape;
@@ -27,99 +26,62 @@ public:
         body->SetLinearDamping(LINEAR_DAMPING);
         body->SetAngularDamping(ANGULAR_DAMPING);
         delete fixtureDef;
-        Amoeba *ret = new Amoeba();
-        ret->boxBodyDef = bodyDef;
-        ret->boxBody = body;
-        body->SetUserData(ret);
-        return ret;
+        delete bodyDef;
+        delete shape;
+        return body;
     }
 
-    b2BodyDef *boxBodyDef = nullptr;
-    b2Body *boxBody = nullptr;
-private:
-    Amoeba() {}
-};
-
-struct AmoebasWorld {
-    b2World *boxWorld = nullptr;
-
-    AmoebasWorld() {
-        boxWorld = new b2World(b2Vec2(0, 0));
+    void ContactListener::PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) {
+        Collideable *a = (Collideable *) contact->GetFixtureA()->GetBody()->GetUserData();
+        Collideable *b = (Collideable *) contact->GetFixtureB()->GetBody()->GetUserData();
+        float32 impulseValue = impulse->normalImpulses[0];
+        a->handleCollision(b, impulseValue);
+        b->handleCollision(a, impulseValue);
     }
 
-    ~AmoebasWorld() {
-        delete boxWorld;
+    void drawCircleAtBody(sf::RenderWindow *window, b2Body *body, sf::Color color, float radius) {
+        sf::CircleShape bigCircle(radius);
+        sf::CircleShape smallCircle(radius / 5);
+        bigCircle.setPosition(body->GetPosition().x - radius, body->GetPosition().y - radius);
+        smallCircle.setPosition((float) ((body->GetPosition().x - radius / 5) + 0.8f * radius * cos(body->GetAngle())),
+                                (float) ((body->GetPosition().y - radius / 5) + 0.8f * radius * sin(body->GetAngle())));
+        bigCircle.setFillColor(color);
+        smallCircle.setFillColor(sf::Color::Black);
+        window->draw(bigCircle);
+        window->draw(smallCircle);
     }
-
-    Amoeba *createAmoeba(b2Vec2 &position) {
-        return Amoeba::createAmoeba(boxWorld, position);
-    }
-
-    void step() {
-        boxWorld->Step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-    }
-};
-
-sf::CircleShape amoebaBody(1.f);
-sf::CircleShape amoebaEye(0.2f);
-
-void drawAmoebaAtPos(sf::RenderWindow *window, b2Vec2 position, float rotation) {
-    amoebaBody.setPosition(position.x, position.y);
-    amoebaEye.setPosition((float) (position.x + 0.8f + 0.8 * cos(rotation)),
-                          (float) (position.y + 0.8f + 0.8 * sin(rotation)));
-    window->draw(amoebaBody);
-    window->draw(amoebaEye);
 }
 
+using namespace global;
+
 int main() {
+    srand((unsigned int) time(0));
     sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
     window.setFramerateLimit(60);
-    sf::View view(sf::Vector2f(0, 0), sf::Vector2f(20, 16));
-    amoebaEye.setFillColor(sf::Color::Black);
-    amoebaBody.setFillColor(sf::Color::Green);
+    sf::View view(sf::Vector2f(WORLD_SIZE / 2, WORLD_SIZE / 2), sf::Vector2f(20, 16));
 
-    AmoebasWorld world;
-
-    b2Vec2 vec;
-    vec.Set(0, 1.2f);
-    Amoeba *a = world.createAmoeba(vec);
-    vec.Set(5, 0);
-    Amoeba *a2 = world.createAmoeba(vec);
+    AmoebaWorld world;
 
     while (window.isOpen()) {
         sf::Event event;
         world.step();
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-            view.move(-.1f, 0);
+            view.move(-.005f * view.getSize().x, 0);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-            view.move(.1, 0);
+            view.move(.005f * view.getSize().x, 0);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-            view.move(0, -.1f);
+            view.move(0, -.005f * view.getSize().x);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-            view.move(0, .1);
+            view.move(0, .005f * view.getSize().x);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Add)) {
             view.zoom(0.99);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Subtract)) {
             view.zoom(1.01);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-            a->boxBody->ApplyForceToCenter(b2Vec2(
-                    (float32) (cos(a->boxBody->GetAngle()) * 10),
-                    (float32) (sin(a->boxBody->GetAngle()) * 10)
-            ), true);
-            a->boxBody->ApplyTorque(2, true);
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-            a->boxBody->ApplyForceToCenter(b2Vec2(
-                    (float32) (cos(a->boxBody->GetAngle()) * 10),
-                    (float32) (sin(a->boxBody->GetAngle()) * 10)
-            ), true);
-            a->boxBody->ApplyTorque(-2, true);
         }
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
@@ -128,10 +90,13 @@ int main() {
 
         window.setView(view);
         window.clear();
-        drawAmoebaAtPos(&window, a->boxBody->GetPosition(), a->boxBody->GetAngle());
-        drawAmoebaAtPos(&window, a2->boxBody->GetPosition(), a2->boxBody->GetAngle());
+        for (Amoeba *a : world.amoebas) {
+            drawCircleAtBody(&window, a->boxBody, sf::Color::Green, 1.f);
+        }
+        for (AmoebaFood *af : world.foods) {
+            drawCircleAtBody(&window, af->boxBody, sf::Color::Red, .2f);
+        }
         window.display();
     }
-
     return 0;
 }
