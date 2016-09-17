@@ -60,11 +60,9 @@ int main() {
     window.setFramerateLimit(60);
     sf::View view(sf::Vector2f(WORLD_SIZE / 2, WORLD_SIZE / 2), sf::Vector2f(20, 16));
 
-    AmoebaWorld world;
-
     while (window.isOpen()) {
         sf::Event event;
-        world.step();
+        AmoebaWorld::getInstance()->step();
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
             view.move(-.005f * view.getSize().x, 0);
         }
@@ -90,10 +88,10 @@ int main() {
 
         window.setView(view);
         window.clear();
-        for (Amoeba *a : world.amoebas) {
+        for (Amoeba *a : AmoebaWorld::getInstance()->amoebas) {
             drawCircleAtBody(&window, a->boxBody, sf::Color::Green, 1.f);
         }
-        for (AmoebaFood *af : world.foods) {
+        for (AmoebaFood *af : AmoebaWorld::getInstance()->foods) {
             drawCircleAtBody(&window, af->boxBody, sf::Color::Red, .2f);
         }
         window.display();

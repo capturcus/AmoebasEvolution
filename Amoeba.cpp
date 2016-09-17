@@ -5,6 +5,7 @@
 #include "Amoeba.h"
 #include "main.h"
 #include "AmoebaFood.h"
+#include "AmoebaWorld.h"
 
 Amoeba * Amoeba::createAmoeba(b2World *boxWorld, b2Vec2 &position) {
     Amoeba *ret = new Amoeba();
@@ -22,6 +23,12 @@ void Amoeba::stepTurn(float32 speed, float32 turn) {
 }
 
 void Amoeba::step() {
+    for (AmoebaFood* af : AmoebaWorld::getInstance()->foods) {
+        float32 dist = b2Distance(boxBody->GetPosition(), af->boxBody->GetPosition());
+    }
+    //one input, angle to nearest food
+    //n hidden neurons - subjects to genetic algorithm
+    //two outputs, tracks
     stepTurn(testSpeed, testDir);
 }
 

@@ -8,6 +8,20 @@
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
 
+#define SINGLETON_HPP(T) \
+private:\
+static T * instance;\
+public:\
+static T * getInstance();
+
+#define SINGLETON_CPP(T)\
+T * T::instance = nullptr;\
+T * T::getInstance(){\
+	if(instance == nullptr)\
+		instance = new T;\
+	return instance;\
+}
+
 namespace global {
 
     const float32 TIME_STEP = 1.f / 60.f;

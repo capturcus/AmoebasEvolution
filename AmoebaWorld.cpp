@@ -4,6 +4,8 @@
 
 #include "AmoebaWorld.h"
 
+SINGLETON_CPP(AmoebaWorld)
+
 AmoebaWorld::AmoebaWorld() {
     boxWorld = new b2World(b2Vec2(0, 0));
     b2Vec2 startPosition;

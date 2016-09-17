@@ -10,6 +10,8 @@
 
 using namespace global;
 
+const float AMOEBA_PERCEPTION = 10;
+
 class Amoeba :
         public Collideable {
 public:

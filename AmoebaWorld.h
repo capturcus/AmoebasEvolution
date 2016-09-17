@@ -13,6 +13,7 @@
 using namespace global;
 
 class AmoebaWorld {
+    SINGLETON_HPP(AmoebaWorld)
 public:
     b2World *boxWorld = nullptr;
     std::vector<Amoeba *> amoebas;
